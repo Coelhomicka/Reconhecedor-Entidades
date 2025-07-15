@@ -1,0 +1,104 @@
+Projeto • API RH com Frontend Integrado
+
+1. Estrutura de Pastas
+----------------------
+/
+├── app.py
+├── db.py
+├── schema.sql
+├── model_language.py
+├── patterns.json
+├── routes.py
+└── static/
+    ├── index.html
+    ├── style.css
+    └── script.js
+
+2. app.py (Application Factory)
+-------------------------------
+- Cria a instância Flask com `static_folder="static"` e `static_url_path=""`.
+- Configura o caminho para o arquivo SQLite (instância).
+- Chama `init_db()` automaticamente para criar o schema.
+- Registra teardown com `close_db()` para fechar conexões.
+- Registra o Blueprint `routes_bp` (API).
+- Rota `/` serve `static/index.html`.
+
+3. db.py (Gerenciamento de Banco)
+---------------------------------
+- `get_db()`: abre conexão SQLite por request (armazenada em `flask.g`).
+- `close_db()`: fecha a conexão ao fim do request.
+- `init_db()`: lê `schema.sql` e executa DDL para criar tabelas:
+    • cvs(id, filename)
+    • hard_skill(cv_id, entity)
+    • soft_skill(cv_id, entity)
+    • experiencia(cv_id, entity)
+    • formacao(cv_id, entity)
+    • certificacao(cv_id, entity)
+
+4. model_language.py (Pipeline de NER)
+--------------------------------------
+- Carrega modelo `pt_core_news_sm`.
+- Adiciona `EntityRuler` antes do `ner` interno.
+- Lê `patterns.json` contendo padrões de HARDSKILL, SOFTSKILL, EXPERIENCIA, FORMACAO e CERTIFICACAO.
+- Registra os padrões via `ruler.add_patterns(patterns)`.
+
+5. patterns.json (Padrões de Entities)
+--------------------------------------
+- JSON com elementos:
+  [
+    { "label": "HARDSKILL", "pattern": [...] },
+    { "label": "SOFTSKILL", "pattern": [...] },
+    ...
+  ]
+- Serve de base para reconhecimento determinístico de entidades.
+
+6. routes.py (Blueprint de API)
+-------------------------------
+- `/entities` [POST]: adiciona novos padrões (EntityRuler) recebidos no corpo JSON.
+- `/analyze-cv` [POST]: 
+    1. Recebe PDF via `file` (FormData).
+    2. Extrai texto com `pdfminer.high_level.extract_text`.
+    3. Executa `nlp(text)` para extrair entidades pelo spaCy + EntityRuler.
+    4. Persiste entidades no SQLite (tabelas por categoria).
+    5. Chama OpenAI GPT-4 via `openai.chat.completions.create` com trecho do texto:
+       - Gera JSON com `summary` e `score`.
+    6. Retorna JSON contendo:
+       • hard_skill, soft_skill, experiencia, formacao, certificacao  
+       • curriculo_nome  
+       • summary, score  
+
+- `/search` [GET]: busca no SQLite CVs que contenham um determinado valor em uma categoria:
+    • Query params: `category`, `value`
+    • Retorna lista de `filename`.
+
+7. static/ (Frontend)
+---------------------
+- **index.html**: UI com Bootstrap 5 e Bootstrap Icons.
+  • Nav‐tabs: Upload e Busca.  
+  • Formulário de upload de PDF.  
+  • Cards para mostrar Resumo e entidades.  
+  • Formulário de busca por categoria e valor.
+
+- **style.css**: estilos customizados (cores de fundo, sombras, badges).
+
+- **script.js**: lógica JS (ES6):
+  • `fetch` para `/analyze-cv`: upload, recebe JSON, renderiza cards.  
+  • `fetch` para `/search`: busca e renderiza lista de filenames.
+
+8. Dependências
+---------------
+- Python: Flask, pdfminer.six, spacy, openai, click (opcional para CLI).
+- Modelos: `python -m spacy download pt_core_news_sm`
+- Node/browser: Bootstrap 5, Bootstrap Icons (via CDN).
+
+9. Fluxo de Execução
+--------------------
+1. Iniciar app: `python app.py`.
+2. Browser acessa `/` → carrega frontend.
+3. Usuário faz upload de PDF.
+4. Backend:
+   - Extrai texto, reconhece entidades spaCy, persiste no SQLite.
+   - Solicita ao GPT-4 o resumo e score.
+   - Retorna JSON completo.
+5. Frontend renderiza Resumo + Score e cards de entidades.
+6. Usuário pode buscar CVs por categoria (`/search`).

@@ -1,0 +1,35 @@
+body {
+  background-color: #f5f7fa;
+  color: #333;
+}
+
+.navbar {
+  backdrop-filter: brightness(1.1);
+}
+
+.card {
+  border: none;
+  border-radius: 0.75rem;
+}
+
+.card-title {
+  font-weight: 500;
+}
+
+.badge-entity {
+  margin: 0.2rem;
+  font-size: 0.85rem;
+}
+
+#upload-result .card {
+  min-height: 200px;
+}
+
+.list-group-item {
+  display: flex;
+  align-items: center;
+}
+
+.list-group-item .bi {
+  margin-right: 0.5rem;
+}

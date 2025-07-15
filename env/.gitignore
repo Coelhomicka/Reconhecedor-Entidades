@@ -1,0 +1,33 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenvs
+env/
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# VSCode
+.vscode/
+
+# Flask instance folder
+instance/
+
+# SQLite / logs
+*.sqlite3
+*.db
+*.log
+
+# Pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+.cache
+
+# Mac/Linux files
+.DS_Store
